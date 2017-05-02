@@ -14,7 +14,7 @@ int main()
 	tree.insert(21);
 	tree.insert(7);
 
-	std::cout << tree.get(13) << std::endl;
+	tree.remove(20);
 
 	system("pause");
 	return 0;
