@@ -188,20 +188,42 @@ public:
 
 	void remove(const T& target)
 	{
-		BinaryNode<T>* target_root = nullptr;
-		BinaryNode<T>& target_node = get_node(target, *root_, &target_root);
+		//BinaryNode<T>& target_node = get_node(target, *root_);
 
-		remove_internal(target_node, target_root);
+		//remove_internal(target_node, target_root);
 	}
 
 private:
 
-	BinaryNode<T>& find_smallest(BinaryNode<T>& root, BinaryNode<T>*& )
+	// Recursive step into a tree with an attempt to find a target node
+	BinaryNode<T>& get_next(const T& target, BinaryNode<T>& current_node)
+	{
+		if (current_node.entry_ == target) {
+			return current_node;
+		}
+		
+		if (target < current_node.entry_) {
+			if (!current_node.try_lesser())
+			{
+				throw std::out_of_range("No such entry in the binary tree.");
+			}
+			return get_next(target, *current_node.lesser_);
+		}
+		else {
+			if (!current_node.try_greater())
+			{
+				throw std::out_of_range("No such entry in the binary tree.");
+			}
+			return get_next(target, *current_node.greater_);
+		}
+	}
+
+	BinaryNode<T>& find_smallest(BinaryNode<T>& root)
 	{
 		return (root.try_lesser()) ? find_smallest(*root.lesser_) : root;
 	}
 
-	void remove_internal(BinaryNode<T>& target_node, BinaryNode<T>*& target_root)
+	/*void remove_internal(BinaryNode<T>& target_node, BinaryNode<T>*& target_root)
 	{
 		if (target_root == nullptr) {
 			delete root_;
@@ -234,9 +256,9 @@ private:
 				target_root->greater_ = nullptr;
 			}
 		}
-	}
+	}*/
 
-	BinaryNode<T>& get_node(const T& target, BinaryNode<T>& root, BinaryNode<T>** previous_node)
+	/*BinaryNode<T>& get_node(const T& target, BinaryNode<T>& root)
 	{
 		if (target < start_->get_entry()) {
 			throw std::out_of_range("No such entry in the binary tree.");
@@ -245,38 +267,8 @@ private:
 			throw std::out_of_range("No such entry in the binary tree.");
 		}
 
-		return get_next(target, root, previous_node);
-	}
-
-	void remove_node(BinaryNode<T> target_node)
-	{
-
-	}
-
-	// Recursive step into a tree with an attempt to find a target node
-	BinaryNode<T>& get_next(const T& target, BinaryNode<T>& current_node, BinaryNode<T>** previous_node)
-	{
-		if (current_node.entry_ == target) {
-			return current_node;
-		}
-		
-		if (target < current_node.entry_) {
-			if (!current_node.try_lesser())
-			{
-				throw std::out_of_range("No such entry in the binary tree.");
-			}
-			*previous_node = &current_node;
-			return get_next(target, *current_node.lesser_, previous_node);
-		}
-		else {
-			if (!current_node.try_greater())
-			{
-				throw std::out_of_range("No such entry in the binary tree.");
-			}
-			*previous_node = &current_node;
-			return get_next(target, *current_node.greater_, previous_node);
-		}
-	}
+		return get_next(target, root);
+	}*/
 
 	BinaryNode<T>*			root_		= nullptr;
 	BinaryNode<T>*			start_		= nullptr;
