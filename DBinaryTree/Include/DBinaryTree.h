@@ -247,7 +247,7 @@ private:
 		if (to_remove.try_greater() && to_remove.try_lesser()) {
 			BinaryNode<T>& lesser_r = *to_remove.lesser_;
 			to_remove = lesser_r;
-			remove_node(lesser_r, parent_node, -delete_node_direction);
+			remove_node(lesser_r, to_remove, -1);
 		}
 		else if (to_remove.try_greater()) {
 			auto junk = parent_node.set_direction(to_remove.move_greater(), delete_node_direction);
