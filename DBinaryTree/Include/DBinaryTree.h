@@ -36,7 +36,8 @@ private:
 
 		BinaryNode<T>&	operator=(const BinaryNode<T>& rhs)
 		{
-			_entry = rhs.entry_;
+			entry_ = rhs.entry_;
+			return *this;
 		}
 
 		BinaryNode<T>&	operator=(BinaryNode<T>&& rhs)
@@ -44,9 +45,10 @@ private:
 			_entry = std::move(rhs.entry_);
 			lesser_ = rhs.lesser_;	rhs.lesser_ = nullptr;
 			greater_ = rhs.greater_;	rhs.greater_ = nullptr;
+			return *this;
 		}
 
-		bool operator<(const T& rhs)
+		bool operator<(const T& rhs) const
 		{
 			return entry_ < rhs;
 		}
@@ -76,14 +78,57 @@ private:
 			return entry_;
 		}
 
-		bool try_lesser()
+		bool try_lesser() const 
 		{
 			return (lesser_ == nullptr) ? false : true;
 		}
 
-		bool try_greater()
+		bool try_greater() const
 		{
 			return (greater_ == nullptr) ? false : true;
+		}
+
+		BinaryNode<T>* move_lesser()
+		{
+			auto moved = lesser_;
+			lesser_ = nullptr;
+			return moved;
+		}
+
+		BinaryNode<T>* move_greater()
+		{
+			auto moved = greater_;
+			greater_ = nullptr;
+			return moved;
+		}
+
+		BinaryNode<T>* set_direction(BinaryNode<T>* data, int direction)
+		{
+			if (direction > 0) {
+				auto junk = greater_;
+				greater_ = data;
+				return junk;
+			}
+			if (direction < 0) {
+				auto junk = lesser_;
+				lesser_ = data;
+				return junk;
+			}
+			else {
+				return nullptr;
+			}
+		}
+
+		void delete_direction(int direction)
+		{
+			if (direction < 0) {
+				delete lesser_;
+				lesser_ = nullptr;
+			}
+			if (direction > 0) {
+				delete greater_;
+				greater_ = nullptr;
+			}
 		}
 
 		T						entry_;
@@ -126,7 +171,6 @@ private:
 
 			return greater_->put(std::move(new_entry));
 		}
-
 	};
 
 public:
@@ -188,12 +232,36 @@ public:
 
 	void remove(const T& target)
 	{
-		//BinaryNode<T>& target_node = get_node(target, *root_);
+		BinaryNode<T>* parent_node = nullptr;
+		int delete_node_direction = 0;
 
-		//remove_internal(target_node, target_root);
+		// Get node to delete, it's parent and direction from parent
+		BinaryNode<T>* delete_node = get_next_and_parent(target, *root_, parent_node, delete_node_direction);
+		remove_node(*delete_node, *parent_node, delete_node_direction);
 	}
 
 private:
+
+	void remove_node(BinaryNode<T>& to_remove, BinaryNode<T>& parent_node, int delete_node_direction)
+	{
+		if (to_remove.try_greater() && to_remove.try_lesser()) {
+			BinaryNode<T>& lesser_r = *to_remove.lesser_;
+			to_remove = lesser_r;
+			remove_node(lesser_r, parent_node, -delete_node_direction);
+		}
+		else if (to_remove.try_greater()) {
+			auto junk = parent_node.set_direction(to_remove.move_greater(), delete_node_direction);
+			delete junk;
+		}
+		else if (to_remove.try_lesser()) {
+			auto junk = parent_node.set_direction(to_remove.move_lesser(), delete_node_direction);
+			delete junk;
+		}
+		else {
+			parent_node.delete_direction(delete_node_direction);
+		}
+		
+	}
 
 	// Recursive step into a tree with an attempt to find a target node
 	BinaryNode<T>& get_next(const T& target, BinaryNode<T>& current_node)
@@ -205,16 +273,41 @@ private:
 		if (target < current_node.entry_) {
 			if (!current_node.try_lesser())
 			{
-				throw std::out_of_range("No such entry in the binary tree.");
+				return nullptr;
 			}
 			return get_next(target, *current_node.lesser_);
 		}
 		else {
 			if (!current_node.try_greater())
 			{
-				throw std::out_of_range("No such entry in the binary tree.");
+				return nullptr;
 			}
 			return get_next(target, *current_node.greater_);
+		}
+	}
+
+	BinaryNode<T>* get_next_and_parent(const T& target, BinaryNode<T>& current_node, BinaryNode<T>*& parent_node, int& target_direction)
+	{
+		if (current_node.entry_ == target) {
+			return &current_node;
+		}
+
+		parent_node = &current_node;
+		if (target < current_node.entry_) {
+			if (!current_node.try_lesser())
+			{
+				throw std::out_of_range("No such entry in the binary tree.");
+			}
+			target_direction = -1;
+			return get_next_and_parent(target, *current_node.lesser_, parent_node, target_direction);
+		}
+		else {
+			if (!current_node.try_greater())
+			{
+				throw std::out_of_range("No such entry in the binary tree.");
+			}
+			target_direction = 1;
+			return get_next_and_parent(target, *current_node.greater_, parent_node, target_direction);
 		}
 	}
 
@@ -222,53 +315,6 @@ private:
 	{
 		return (root.try_lesser()) ? find_smallest(*root.lesser_) : root;
 	}
-
-	/*void remove_internal(BinaryNode<T>& target_node, BinaryNode<T>*& target_root)
-	{
-		if (target_root == nullptr) {
-			delete root_;
-			root_ = nullptr;
-			return;
-		}
-
-		if (target_node.try_greater() && target_node.try_lesser()) {
-			BinaryNode<T>& smallest_on_right = find_smallest(target_node);
-			target_node = smallest_on_right;
-			remove_internal(smallest_on_right);
-		}
-		else if (target_node.try_greater()) {
-			auto temp = target_node.greater_;
-			delete target_root->greater_;
-			target_root->greater_ = temp;
-		}
-		else if (target_node.try_lesser()) {
-			auto temp = target_node.lesser_;
-			delete target_root->lesser_;
-			target_root->lesser_ = temp;
-		}
-		else {
-			if (target_root->lesser_->entry_ == target_node.entry_) {
-				delete target_root->lesser_;
-				target_root->lesser_ = nullptr;
-			}
-			else {
-				delete target_root->greater_;
-				target_root->greater_ = nullptr;
-			}
-		}
-	}*/
-
-	/*BinaryNode<T>& get_node(const T& target, BinaryNode<T>& root)
-	{
-		if (target < start_->get_entry()) {
-			throw std::out_of_range("No such entry in the binary tree.");
-		}
-		else if (!(target < end_->get_entry())) {
-			throw std::out_of_range("No such entry in the binary tree.");
-		}
-
-		return get_next(target, root);
-	}*/
 
 	BinaryNode<T>*			root_		= nullptr;
 	BinaryNode<T>*			start_		= nullptr;
