@@ -113,11 +113,25 @@ private:
 			if (direction < 0) {
 				delete lesser_;
 				lesser_ = nullptr;
+				return;
 			}
 			if (direction > 0) {
 				delete greater_;
 				greater_ = nullptr;
+				return;
 			}
+		}
+
+		void clear_pointers()
+		{
+			lesser_ = nullptr;
+			greater_ = nullptr;
+		}
+
+		~BinaryNode()
+		{
+			delete lesser_;
+			delete greater_;
 		}
 
 		T						entry_;
@@ -164,6 +178,11 @@ private:
 
 public:
 	DBinaryTree() = default;
+
+	~DBinaryTree()
+	{
+		delete root_;
+	}
 
 	DBinaryTree<T>& insert(const T& new_entry)
 	{
@@ -242,10 +261,12 @@ private:
 		}
 		else if (to_remove.try_greater()) {
 			auto junk = parent_node.set_direction(to_remove.move_greater(), delete_node_direction);
+			junk->clear_pointers();
 			delete junk;
 		}
 		else if (to_remove.try_lesser()) {
 			auto junk = parent_node.set_direction(to_remove.move_lesser(), delete_node_direction);
+			junk->clear_pointers();
 			delete junk;
 		}
 		else {
