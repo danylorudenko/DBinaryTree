@@ -34,25 +34,16 @@ private:
 			greater_ = rhs.greater_;	rhs.greater_ = nullptr;
 		}
 
-		BinaryNode<T>&	operator=(const BinaryNode<T>& rhs)
-		{
-			entry_ = rhs.entry_;
-			return *this;
-		}
+		BinaryNode<T>&	operator=(const BinaryNode<T>& rhs) = delete;
 
-		BinaryNode<T>&	operator=(BinaryNode<T>&& rhs)
-		{
-			_entry = std::move(rhs.entry_);
-			lesser_ = rhs.lesser_;	rhs.lesser_ = nullptr;
-			greater_ = rhs.greater_;	rhs.greater_ = nullptr;
-			return *this;
-		}
+		BinaryNode<T>&	operator=(BinaryNode<T>&& rhs) = delete;
 
 		bool operator<(const T& rhs) const
 		{
 			return entry_ < rhs;
 		}
 
+		// Recursive putting of the new entry to the appropriate leaf in the tree
 		BinaryNode<T>* put(const T& new_entry)
 		{
 			if (entry_ <= new_entry) {
@@ -63,6 +54,7 @@ private:
 			}
 		}
 
+		// Recursive putting of the new entry to the appropriate leaf in the tree
 		BinaryNode<T>* put(T&& new_entry)
 		{
 			if (entry_ <= new_entry) {
@@ -71,11 +63,6 @@ private:
 			else {
 				return put_lesser(std::move(new_entry));
 			}
-		}
-
-		T& get_entry()
-		{
-			return entry_;
 		}
 
 		bool try_lesser() const 
@@ -102,17 +89,19 @@ private:
 			return moved;
 		}
 
+		// Setting new data node in the passed direction.
+		// Returning entry that was previously in the inserted position.
 		BinaryNode<T>* set_direction(BinaryNode<T>* data, int direction)
 		{
 			if (direction > 0) {
-				auto junk = greater_;
+				auto prevoius_entry = greater_;
 				greater_ = data;
-				return junk;
+				return prevoius_entry;
 			}
 			if (direction < 0) {
-				auto junk = lesser_;
+				auto prevoius_entry = lesser_;
 				lesser_ = data;
-				return junk;
+				return prevoius_entry;
 			}
 			else {
 				return nullptr;
@@ -187,10 +176,10 @@ public:
 		
 		BinaryNode<T>* new_node = root_->put(new_entry);
 
-		if (new_node->get_entry() < start_->get_entry()) {
+		if (new_node->entry_ < start_->entry_) {
 			start_ = new_node;
 		}
-		else if(!(new_node->get_entry() < end_->get_entry())) {
+		else if(!(new_node->entry_ < end_->entry_)) {
 			end_ = new_node;
 		}
 
@@ -208,10 +197,10 @@ public:
 
 		BinaryNode<T>* new_node = root_->put(std::move(new_entry));
 
-		if (new_node->get_entry() < start_->get_entry()) {
+		if (new_node->entry_ < start_->entry_) {
 			start_ = new_node;
 		}
-		else if (!(new_node->get_entry() < end_->get_entry())) {
+		else if (!(new_node->entry_ < end_->entry_)) {
 			end_ = new_node;
 		}
 
@@ -242,11 +231,13 @@ public:
 
 private:
 
+	// Safe removement of node.
+	// Notification of parents about the changes and recursive self-call to tide up after removement.
 	void remove_node(BinaryNode<T>& to_remove, BinaryNode<T>& parent_node, int delete_node_direction)
 	{
 		if (to_remove.try_greater() && to_remove.try_lesser()) {
 			BinaryNode<T>& lesser_r = *to_remove.lesser_;
-			to_remove = lesser_r;
+			to_remove.entry_ = lesser_r.entry_;
 			remove_node(lesser_r, to_remove, -1);
 		}
 		else if (to_remove.try_greater()) {
@@ -286,6 +277,9 @@ private:
 		}
 	}
 
+	// Recursive step into a tree with an attempt to find a target node
+	// Also returning parent pointer by passed reference-to-pointer
+	// and the direction in which current node lies in relation it's parent.
 	BinaryNode<T>* get_next_and_parent(const T& target, BinaryNode<T>& current_node, BinaryNode<T>*& parent_node, int& target_direction)
 	{
 		if (current_node.entry_ == target) {
@@ -311,6 +305,7 @@ private:
 		}
 	}
 
+	// Finds the most left leaf of the passed root node
 	BinaryNode<T>& find_smallest(BinaryNode<T>& root)
 	{
 		return (root.try_lesser()) ? find_smallest(*root.lesser_) : root;
